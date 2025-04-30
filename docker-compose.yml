@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.8"
 
 services:
   db:
@@ -9,55 +9,45 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "${DB_PORT}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
   backend:
-    build:
-      context: ./backend
+    build: ./backend
     container_name: backend
-    command: ./start.sh
     restart: always
+    env_file:
+      - ./backend/.env
     depends_on:
       - db
-    environment:
-      DB_HOST: db
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_PORT: 5432
-      SECRET_KEY: ${SECRET_KEY}
-      DEBUG: ${DEBUG}
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
     volumes:
-      - backend_static:/app/static
+      - static-data:/app/static
+    expose:
+      - "8000"
 
   frontend:
-    build:
-      context: ./frontend
+    build: ./frontend
     container_name: frontend
     restart: always
-    environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL}
-      VITE_WEBSOCKET_BASE_URL: ${VITE_WEBSOCKET_BASE_URL}
-    ports:
-      - "8080:8080"
+    env_file:
+      - ./frontend/.env
+    expose:
+      - "8080"
 
   nginx:
-    build:
-      context: ./nginx
+    build: ./nginx
     container_name: nginx
     restart: always
-    depends_on:
-      - backend
-      - frontend
     ports:
       - "80:80"
+    depends_on:
+      - frontend
+      - backend
     volumes:
-      - backend_static:/etc/static
+      - static-data:/etc/static
 
 volumes:
-  postgres_data:
-  backend_static:
+  db-data:
+  static-data:
